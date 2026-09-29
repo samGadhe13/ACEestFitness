@@ -11,7 +11,11 @@ app = Flask(__name__)
 
 PROGRAM_TEMPLATES = {
     "Fat Loss": ["Full Body HIIT", "Circuit Training", "Cardio + Weights"],
-    "Muscle Gain": ["Push/Pull/Legs", "Upper/Lower Split", "Full Body Strength"],
+    "Muscle Gain": [
+		"Push/Pull/Legs",
+		"Upper/Lower Split",
+		"Full Body Strength"
+		],
     "Beginner": ["Full Body 3x/week", "Light Strength + Mobility"],
 }
 
@@ -93,7 +97,8 @@ def init_db(db_name=DB_NAME):
     """)
 
     cur.execute(
-        "INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)",
+        "INSERT OR IGNORE INTO users "
+	"(username, password, role) VALUES (?, ?, ?)",
         ("admin", "admin", "Admin"),
     )
 
@@ -335,4 +340,3 @@ def get_workouts(client_id):
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")))
-
