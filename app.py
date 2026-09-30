@@ -2,7 +2,9 @@ import os
 import random
 import sqlite3
 from datetime import date
+
 from flask import Flask, jsonify, request
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(BASE_DIR, "aceest_fitness.db")
@@ -12,10 +14,10 @@ app = Flask(__name__)
 PROGRAM_TEMPLATES = {
     "Fat Loss": ["Full Body HIIT", "Circuit Training", "Cardio + Weights"],
     "Muscle Gain": [
-		"Push/Pull/Legs",
-		"Upper/Lower Split",
-		"Full Body Strength"
-		],
+        "Push/Pull/Legs",
+        "Upper/Lower Split",
+        "Full Body Strength",
+    ],
     "Beginner": ["Full Body 3x/week", "Light Strength + Mobility"],
 }
 
@@ -98,7 +100,7 @@ def init_db(db_name=DB_NAME):
 
     cur.execute(
         "INSERT OR IGNORE INTO users "
-	"(username, password, role) VALUES (?, ?, ?)",
+        "(username, password, role) VALUES (?, ?, ?)",
         ("admin", "admin", "Admin"),
     )
 
@@ -125,9 +127,15 @@ def health():
         conn = get_db()
         conn.execute("SELECT 1")
         conn.close()
-        return jsonify({"status": "healthy", "database": "connected"}), 200
+        return jsonify({
+            "status": "healthy",
+            "database": "connected",
+        }), 200
     except sqlite3.Error as exc:
-        return jsonify({"status": "unhealthy", "error": str(exc)}), 500
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(exc),
+        }), 500
 
 
 @app.post("/login")
@@ -138,7 +146,8 @@ def login():
 
     conn = get_db()
     row = conn.execute(
-        "SELECT username, role FROM users WHERE username=? AND password=?",
+        "SELECT username, role FROM users "
+        "WHERE username=? AND password=?",
         (username, password),
     ).fetchone()
     conn.close()
@@ -156,8 +165,11 @@ def login():
 @app.get("/clients")
 def get_clients():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM clients ORDER BY name").fetchall()
+    rows = conn.execute(
+        "SELECT * FROM clients ORDER BY name"
+    ).fetchall()
     conn.close()
+
     return jsonify([dict(row) for row in rows]), 200
 
 
@@ -188,23 +200,32 @@ def add_client():
             data.get("membership_status", "Active"),
             data.get("membership_end"),
         ))
+
         conn.commit()
+
         row = conn.execute(
-            "SELECT * FROM clients WHERE id=?", (cur.lastrowid,)
+            "SELECT * FROM clients WHERE id=?",
+            (cur.lastrowid,),
         ).fetchone()
+
         conn.close()
+
         return jsonify(dict(row)), 201
+
     except sqlite3.IntegrityError:
         conn.rollback()
         conn.close()
-        return jsonify({"error": "Client name already exists"}), 409
+        return jsonify({
+            "error": "Client name already exists",
+        }), 409
 
 
 @app.get("/clients/<int:client_id>")
 def get_client(client_id):
     conn = get_db()
     row = conn.execute(
-        "SELECT * FROM clients WHERE id=?", (client_id,)
+        "SELECT * FROM clients WHERE id=?",
+        (client_id,),
     ).fetchone()
     conn.close()
 
@@ -225,12 +246,18 @@ def generate_program(client_id):
             "allowed": list(PROGRAM_TEMPLATES),
         }), 400
 
-    program_type = requested_type or random.choice(list(PROGRAM_TEMPLATES))
-    program_detail = random.choice(PROGRAM_TEMPLATES[program_type])
+    program_type = (
+        requested_type
+        or random.choice(list(PROGRAM_TEMPLATES))
+    )
+    program_detail = random.choice(
+        PROGRAM_TEMPLATES[program_type]
+    )
 
     conn = get_db()
     client = conn.execute(
-        "SELECT name FROM clients WHERE id=?", (client_id,)
+        "SELECT name FROM clients WHERE id=?",
+        (client_id,),
     ).fetchone()
 
     if not client:
@@ -273,23 +300,31 @@ def check_membership(client_id):
 @app.post("/clients/<int:client_id>/workouts")
 def add_workout(client_id):
     data = request.get_json(silent=True) or {}
-    workout_date = data.get("date", date.today().isoformat())
-    workout_type = str(data.get("workout_type", "")).strip()
+    workout_date = data.get(
+        "date",
+        date.today().isoformat(),
+    )
+    workout_type = str(
+        data.get("workout_type", "")
+    ).strip()
     duration = data.get("duration_min")
 
     if not workout_type or duration is None:
         return jsonify({
-            "error": "workout_type and duration_min are required"
+            "error": "workout_type and duration_min are required",
         }), 400
 
     try:
         duration = int(duration)
     except (TypeError, ValueError):
-        return jsonify({"error": "duration_min must be an integer"}), 400
+        return jsonify({
+            "error": "duration_min must be an integer",
+        }), 400
 
     conn = get_db()
     client = conn.execute(
-        "SELECT name FROM clients WHERE id=?", (client_id,)
+        "SELECT name FROM clients WHERE id=?",
+        (client_id,),
     ).fetchone()
 
     if not client:
@@ -307,10 +342,14 @@ def add_workout(client_id):
         duration,
         data.get("notes"),
     ))
+
     conn.commit()
+
     row = conn.execute(
-        "SELECT * FROM workouts WHERE id=?", (cur.lastrowid,)
+        "SELECT * FROM workouts WHERE id=?",
+        (cur.lastrowid,),
     ).fetchone()
+
     conn.close()
 
     return jsonify(dict(row)), 201
@@ -320,7 +359,8 @@ def add_workout(client_id):
 def get_workouts(client_id):
     conn = get_db()
     client = conn.execute(
-        "SELECT name FROM clients WHERE id=?", (client_id,)
+        "SELECT name FROM clients WHERE id=?",
+        (client_id,),
     ).fetchone()
 
     if not client:
@@ -332,6 +372,7 @@ def get_workouts(client_id):
         WHERE client_name=?
         ORDER BY date DESC
     """, (client["name"],)).fetchall()
+
     conn.close()
 
     return jsonify([dict(row) for row in rows]), 200
@@ -339,4 +380,7 @@ def get_workouts(client_id):
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")))
+    app.run(
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "5000")),
+    )
