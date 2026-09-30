@@ -41,4 +41,4 @@ jobs:
 
       - name: Run tests inside Docker container
         run: |
-          docker run --rm aceest-fitness:ci sh -c "pytest -q"
+          docker run --rm aceest-fitness:ci sh -c "PYTHONPATH=/app pytest -q"
