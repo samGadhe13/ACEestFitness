@@ -11,40 +11,41 @@ stages {
 
     stage('Install Dependencies') {
         steps {
-            bat '''
-                python -m pip install --upgrade pip
-                pip install -r requirements.txt
+            sh '''
+                python3 -m venv .venv
+                .venv/bin/pip install --upgrade pip
+                .venv/bin/pip install -r requirements.txt
             '''
         }
     }
 
     stage('Build and Lint') {
         steps {
-            bat '''
-                python -m py_compile app.py
-                flake8 app.py tests
+            sh '''
+                .venv/bin/python -m py_compile app.py
+                .venv/bin/flake8 app.py tests
             '''
         }
     }
 
     stage('Run Pytest') {
         steps {
-            bat '''
-                set PYTHONPATH=.
-                pytest -q
+            sh '''
+                export PYTHONPATH=.
+                .venv/bin/pytest -q
             '''
         }
     }
 
     stage('Build Docker Image') {
         steps {
-            bat 'docker build -t aceest-fitness:jenkins .'
+            sh 'docker build -t aceest-fitness:jenkins .'
         }
     }
 
     stage('Docker Test') {
         steps {
-            bat 'docker run --rm aceest-fitness:jenkins sh -c "PYTHONPATH=/app pytest -q"'
+            sh 'docker run --rm aceest-fitness:jenkins sh -c "PYTHONPATH=/app pytest -q"'
         }
     }
 }
@@ -62,5 +63,4 @@ post {
         echo 'Jenkins pipeline execution completed.'
     }
 }
-
 }
