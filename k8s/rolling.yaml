@@ -1,10 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aceest-fitness
-  namespace: aceest-fitness
+  name: aceest-rolling
+  labels:
+    app: aceest-fitness
+    strategy: rolling
 spec:
-  replicas: 2
+  replicas: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -13,16 +15,16 @@ spec:
   selector:
     matchLabels:
       app: aceest-fitness
-      track: stable
+      strategy: rolling
   template:
     metadata:
       labels:
         app: aceest-fitness
-        track: stable
+        strategy: rolling
     spec:
       containers:
         - name: aceest-fitness
-          image: samgadhe13/aceest-fitness:2.0
+          image: IMAGE_PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -45,3 +47,21 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-rolling-service
+  labels:
+    app: aceest-fitness
+    strategy: rolling
+spec:
+  type: NodePort
+  selector:
+    app: aceest-fitness
+    strategy: rolling
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+      nodePort: 30080
