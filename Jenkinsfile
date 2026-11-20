@@ -108,38 +108,31 @@ pipeline {
             }
         }
 
+
         stage('Check SonarCloud Quality Gate') {
-    steps {
-        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-            sh '''
-                for attempt in 1 2 3 4 5 6; do
-                    curl -fsS -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=$SONAR_PROJECT_KEY" -o sonar-quality-gate.json || true
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        for attempt in 1 2 3 4 5 6; do
+                            curl -fsS -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=$SONAR_PROJECT_KEY" -o sonar-quality-gate.json || true
 
-                    STATUS=$(python3 -c 'import json; print(json.load(open("sonar-quality-gate.json")).get("projectStatus",{}).get("status","PENDING"))' 2>/dev/null || echo PENDING)
+                            STATUS=$(python3 -c 'import json; print(json.load(open("sonar-quality-gate.json")).get("projectStatus",{}).get("status","PENDING"))' 2>/dev/null || echo PENDING)
 
-                    echo "Quality Gate status (attempt $attempt): $STATUS"
+                            echo "Quality Gate status (attempt $attempt): $STATUS"
 
-                    if [ "$STATUS" = "OK" ]; then
-                        echo "SonarCloud Quality Gate PASSED."
-                        exit 0
-                    fi
+                            [ "$STATUS" = "OK" ] && exit 0
+                            [ "$STATUS" = "ERROR" ] && exit 1
 
-                    if [ "$STATUS" = "ERROR" ]; then
-                        echo "WARNING: SonarCloud Quality Gate FAILED."
-                        echo "TEMPORARY BYPASS: Continuing pipeline for deployment strategy testing."
-                        exit 0
-                    fi
+                            sleep 10
+                        done
 
-                    sleep 10
-                done
-
-                echo "WARNING: Quality Gate status not ready after retries."
-                echo "TEMPORARY BYPASS: Continuing pipeline."
-                exit 0
-            '''
+                        echo "SonarCloud Quality Gate status not ready/failed after retries"
+                        exit 1
+                    '''
                 }
             }
         }
+
 
         stage('Push Docker Images') {
             steps {
