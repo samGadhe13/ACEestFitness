@@ -51,7 +51,7 @@ pipeline {
             steps {
                 sh '''
                     export PYTHONPATH=.
-                    .venv/bin/pytest -q
+                    .venv/bin/pytest -q tests/
                 '''
             }
         }
