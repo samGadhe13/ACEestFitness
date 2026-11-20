@@ -17,7 +17,7 @@ pipeline {
         IMAGE_NAME = 'aceest-fitness'
         K8S_NAMESPACE = 'aceest-fitness'
         SONAR_PROJECT_KEY = 'samGadhe13_ACEestFitness'
-        SONAR_ORGANIZATION = 'samGadhe13'
+        SONAR_ORGANIZATION = 'samgadhe13'
         SONAR_HOST_URL = 'https://sonarcloud.io'
     }
 
